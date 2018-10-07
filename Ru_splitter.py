@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
-
+#!/usr/bin/python3
 import collections
 import re
 
 import numpy as np
 import pandas as pd
 from keras.models import model_from_json
+from functools import reduce
 
 
 class Splitter:
@@ -18,10 +17,10 @@ class Splitter:
                       optimizer='adam',
                       metrics=['accuracy'])
 
-        self.radius = self.model.get_config()[0]['config']['batch_input_shape'][1] / 2
+        self.radius = int(self.model.get_config()['layers'][0]['config']['batch_input_shape'][1] / 2)
         self.length = 2 * self.radius
         self.padding = []
-        for i in range(self.radius):
+        for i in range(int(self.radius)):
             self.padding.append('^')
 
         header = ['Char']
@@ -31,11 +30,11 @@ class Splitter:
         embeddings = pd.read_csv('./Models/char_embeddings.csv', names=header)
         embeddings_dictionary = {}
         
-        for i in xrange(len(embeddings)):
+        for i in range(len(embeddings)):
             vec = []
-            for j in xrange (64):
+            for j in range (64):
                 vec += [embeddings['X' + str(j+1)][i]]
-            embeddings_dictionary[unicode(embeddings['Char'][i], 'utf8')] = vec
+            embeddings_dictionary[embeddings['Char'][i]] = vec
         embeddings_dictionary[' '] = embeddings_dictionary['_']
         embeddings_dictionary['\n '] = embeddings_dictionary['.']
 
@@ -55,12 +54,12 @@ class Splitter:
 
     @staticmethod
     def stop_split(text):
-        dot_list = map(lambda x: x + '.', text.split('.'))
+        dot_list = list(map(lambda x: x + '.', text.split('.')))
         if dot_list[-1] == '.':
             dot_list = dot_list[:-1]
-        excl_list = reduce(lambda x, y: x + map(lambda z: z + '!', y.split('!')[:-1]) + [y.split('!')[-1]], dot_list,
+        excl_list = reduce(lambda x, y: x + list(map(lambda z: z + '!', y.split('!')[:-1])) + [y.split('!')[-1]], dot_list,
                            [])
-        quest_list = reduce(lambda x, y: x + map(lambda z: z + '?', y.split('?')[:-1]) + [y.split('?')[-1]], excl_list,
+        quest_list = reduce(lambda x, y: x + list(map(lambda z: z + '?', y.split('?')[:-1])) + [y.split('?')[-1]], excl_list,
                             [])
         return quest_list
 
@@ -73,34 +72,31 @@ class Splitter:
 
     @staticmethod
     def remove_spaces (sent):
-        if type(sent) == str:
-            sent = unicode(sent, 'utf-8')
         sent = re.sub(u'^ +', u'', sent)
-        return sent.encode('utf-8')
+        return sent
 
     def split(self, input_text):
-
-        input_text = unicode(input_text, 'utf8')
+        input_text = input_text
 
         dw_input_text = self.formatting(input_text)
         dw_input_list = self.stop_split(dw_input_text)
         padded_list = self.padding + dw_input_list + self.padding
         embedded_vectors = collections.deque([])
 
-        for linenum in xrange(self.radius, len(padded_list) - self.radius):
+        for linenum in range(self.radius, len(padded_list) - self.radius):
             left = ''.join(padded_list[linenum - self.radius: linenum + 1])[:-1]
             right = ''.join(padded_list[linenum + 1: linenum + self.radius + 1])
             features = list(left)[-self.radius:] + list(right)[:self.radius]
-            feature_vector = map(lambda x: self.embeddings_lookup[x], features)
+            feature_vector = list(map(lambda x: self.embeddings_lookup[x], features))
             embedded_vectors.append(feature_vector)
 
         X_text = np.array(embedded_vectors, dtype='float32')
         predictions = self.model.predict(X_text)
-        classes = map (lambda x: 0 if x < 0.5 else 1, predictions)
+        classes = list(map (lambda x: 0 if x < 0.5 else 1, predictions))
 
-        final_lines = map(self.add_newline, dw_input_list, classes)
+        final_lines = list(map(self.add_newline, dw_input_list, classes))
         final_text = reduce(lambda x, y: x + y, final_lines)
-        final_text = '\n'.join(map(self.remove_spaces, final_text.splitlines()))
+        final_text = '\n'.join(list(map(self.remove_spaces, final_text.splitlines())))
         split_text = final_text.split('\n')
 
 
