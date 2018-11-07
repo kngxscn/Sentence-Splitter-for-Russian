@@ -1,20 +1,26 @@
 # Sentence-Splitter-for-Russian
 #### Sentence Boundary Detection in raw text input.
 
+## How to install
+
+```text
+$python setup.py install
+```
+
 ## How to use
 Example:
 ```python
-import Ru_splitter
-
-testfile = open("testtext.txt", 'r')
-input_text = testfile.read()
-testfile.close()
+from sentence_splitter_for_russian import Ru_splitter
 
 splitter = Ru_splitter.Splitter()
-sentence_list = splitter.split(input_text)
 
-for i in sentence_list:
-    print i
+testfile = open("testtext.txt", 'r')
+text = testfile.read().strip()
+testfile.close()
+
+res = splitter.split(text)
+for i in res:
+    print(i)
 ```
 
 ## How it works

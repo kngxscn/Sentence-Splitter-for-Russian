@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import collections
 import re
+import os
 
 import numpy as np
 import pandas as pd
@@ -10,8 +11,10 @@ from functools import reduce
 
 class Splitter:
     def __init__(self):
-        self.model = model_from_json(open('./Models/keras_model.json').read())
-        self.model.load_weights('./Models/keras_weights.h5')
+        module_path = os.path.dirname(__file__)
+        print(module_path)
+        self.model = model_from_json(open(os.path.join(module_path, 'Models', 'keras_model.json')).read())
+        self.model.load_weights(os.path.join(module_path, 'Models', 'keras_weights.h5'))
 
         self.model.compile(loss='binary_crossentropy',
                       optimizer='adam',
@@ -27,7 +30,7 @@ class Splitter:
         for i in range(64):
             header.append('X' + str(i+1))
 
-        embeddings = pd.read_csv('./Models/char_embeddings.csv', names=header)
+        embeddings = pd.read_csv(os.path.join(module_path, 'Models', 'char_embeddings.csv'), names=header)
         embeddings_dictionary = {}
         
         for i in range(len(embeddings)):
